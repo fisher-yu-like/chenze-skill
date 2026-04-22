@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陈泽.skill 介绍动画</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+            overflow: hidden;
+        }
+
+        /* 隐藏录屏时的控制条 */
+        .no-record {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // 内联 animations.jsx 内容
+        (function() {
+          const { createContext, useContext, useState, useEffect, useRef, useCallback } = React;
+
+          const TimeContext = createContext({ time: 0, duration: 10, playing: false });
+          const SpriteContext = createContext(null);
+
+          const Easing = {
+            linear: t => t,
+            easeIn: t => t * t,
+            easeOut: t => 1 - (1 - t) * (1 - t),
+            easeInOut: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+            expoOut: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+            overshoot: t => {
+              const c1 = 1.70158, c3 = c1 + 1;
+              return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+            },
+            spring: t => {
+              const c = (2 * Math.PI) / 3;
+              return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c) + 1;
+            },
+            anticipation: t => {
+              if (t < 0.2) return -0.3 * (t / 0.2) * (t / 0.2);
+              const adjusted = (t - 0.2) / 0.8;
+              return -0.012 + 1.012 * adjusted * adjusted * (3 - 2 * adjusted);
+            },
+          };
+
+          function interpolate(t, input, output, easing) {
+            const [inStart, inEnd] = input;
+            const [outStart, outEnd] = output;
+
+            if (t <= inStart) return outStart;
+            if (t >= inEnd) return outEnd;
+
+            let progress = (t - inStart) / (inEnd - inStart);
+            if (easing) {
+              progress = easing(progress);
+            }
+
+            return outStart + (outEnd - outStart) * progress;
+          }
+
+          function useTime() {
+            const ctx = useContext(TimeContext);
+            return ctx.time;
+          }
+
+          function useSprite() {
+            const sprite = useContext(SpriteContext);
+            if (!sprite) {
+              return { t: 0, elapsed: 0, duration: 0 };
+            }
+            return sprite;
+          }
+
+          const stageStyles = {
+            wrapper: {
+              position: 'fixed',
+              inset: 0,
+              background: '#000',
+              display: 'flex',
+              flexDirection: 'column',
+              fontFamily: '-apple-system, sans-serif',
+            },
+            stageHolder: {
+              flex: 1,
+              position: 'relative',
+              overflow: 'hidden',
+            },
+            canvas: {
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transformOrigin: 'center center',
+              background: '#111',
+              overflow: 'hidden',
+            },
+            controls: {
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(10px)',
+              padding: '12px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              color: '#fff',
+              fontSize: 12,
+              zIndex: 100,
+            },
+            button: {
+              background: 'none',
+              border: '1px solid rgba(255,255,255,0.3)',
+              color: '#fff',
+              padding: '6px 14px',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+            },
+            timeDisplay: {
+              fontFamily: 'ui-monospace, monospace',
+              fontVariantNumeric: 'tabular-nums',
+              minWidth: 90,
+            },
+            scrubber: {
+              flex: 1,
+              height: 4,
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: 2,
+              position: 'relative',
+              cursor: 'pointer',
+            },
+            scrubberFill: {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              height: '100%',
+              background: '#fff',
+              borderRadius: 2,
+              pointerEvents: 'none',
+            },
+            scrubberHandle: {
+              position: 'absolute',
+              top: '50%',
+              width: 12,
+              height: 12,
+              background: '#fff',
+              borderRadius: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+            },
+          };
+
+          function Stage({ duration = 10, width = 800, height = 450, fps = 60, loop = true, children, bgColor = '#000' }) {
+            const [time, setTime] = useState(0);
+            const [playing, setPlaying] = useState(true);
+            const [scale, setScale] = useState(1);
+            const rafRef = useRef(null);
+            const startTimeRef = useRef(performance.now());
+            const canvasRef = useRef(null);
+
+            const effectiveLoop = (typeof window !== 'undefined' && window.__recording) ? false : loop;
+
+            useEffect(() => {
+              function updateScale() {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight - 56;
+                const s = Math.min(vw / width, vh / height);
+                setScale(s);
+              }
+              updateScale();
+              window.addEventListener('resize', updateScale);
+              return () => window.removeEventListener('resize', updateScale);
+            }, [width, height]);
+
+            useEffect(() => {
+              if (!playing) return;
+              let cancelled = false;
+              let last = null;
+
+              function tick(now) {
+                if (cancelled) return;
+                if (last === null) {
+                  last = now;
+                  if (typeof window !== 'undefined') window.__ready = true;
+                }
+                const delta = (now - last) / 1000;
+                last = now;
+                setTime(prev => {
+                  const next = prev + delta;
+                  if (next >= duration) {
+                    return effectiveLoop ? 0 : duration - 0.001;
+                  }
+                  return next;
+                });
+                rafRef.current = requestAnimationFrame(tick);
+              }
+
+              const startAfterFonts = () => {
+                if (cancelled) return;
+                rafRef.current = requestAnimationFrame(tick);
+              };
+              if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(startAfterFonts);
+              } else {
+                startAfterFonts();
+              }
+
+              return () => {
+                cancelled = true;
+                cancelAnimationFrame(rafRef.current);
+              };
+            }, [playing, duration, effectiveLoop]);
+
+            const handleScrub = useCallback((e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const ratio = (e.clientX - rect.left) / rect.width;
+              setTime(Math.max(0, Math.min(duration, ratio * duration)));
+            }, [duration]);
+
+            const handleSeek = useCallback((e) => {
+              handleScrub(e);
+              setPlaying(false);
+            }, [handleScrub]);
+
+            const progress = time / duration;
+
+            const ctx = {
+              time,
+              duration,
+              playing,
+              setPlaying,
+              setTime,
+            };
+
+            const canvasStyle = {
+              ...stageStyles.canvas,
+              width,
+              height,
+              background: bgColor,
+              transform: `translate(-50%, -50%) scale(${scale})`,
+            };
+
+            return (
+              <TimeContext.Provider value={ctx}>
+                <div style={stageStyles.wrapper}>
+                  <div style={stageStyles.stageHolder}>
+                    <div ref={canvasRef} style={canvasStyle}>
+                      {children}
+                    </div>
+                  </div>
+
+                  <div style={stageStyles.controls} className="no-record">
+                    <button
+                      style={stageStyles.button}
+                      onClick={() => setPlaying(p => !p)}
+                    >
+                      {playing ? '⏸ 暂停' : '▶ 播放'}
+                    </button>
+
+                    <button
+                      style={stageStyles.button}
+                      onClick={() => setTime(0)}
+                    >
+                      ⏮ 开始
+                    </button>
+
+                    <div style={stageStyles.timeDisplay}>
+                      {time.toFixed(2)}s / {duration.toFixed(2)}s
+                    </div>
+
+                    <div style={stageStyles.scrubber} onMouseDown={handleSeek}>
+                      <div style={{ ...stageStyles.scrubberFill, width: `${progress * 100}%` }} />
+                      <div style={{ ...stageStyles.scrubberHandle, left: `${progress * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </TimeContext.Provider>
+            );
+          }
+
+          function Sprite({ start = 0, end, children, style }) {
+            const { time } = useContext(TimeContext);
+            const actualEnd = end == null ? Infinity : end;
+
+            if (time < start || time >= actualEnd) {
+              return null;
+            }
+
+            const duration = actualEnd - start;
+            const elapsed = time - start;
+            const t = duration === 0 ? 1 : Math.max(0, Math.min(1, elapsed / duration));
+
+            const spriteValue = { t, elapsed, duration, start, end: actualEnd };
+
+            return (
+              <SpriteContext.Provider value={spriteValue}>
+                <div style={{ position: 'absolute', inset: 0, ...style }}>
+                  {children}
+                </div>
+              </SpriteContext.Provider>
+            );
+          }
+
+          if (typeof window !== 'undefined') {
+            window.Animations = {
+              Stage,
+              Sprite,
+              useTime,
+              useSprite,
+              Easing,
+              interpolate,
+            };
+          }
+        })();
+
+        // 动画组件
+        const { Stage, Sprite, useTime, useSprite, Easing, interpolate } = window.Animations;
+
+        // 自定义组件
+        function TitlePage({ title, subtitle, color = '#FFD700' }) {
+            const { t } = useSprite();
+            const opacity = interpolate(t, [0, 0.3], [0, 1], Easing.expoOut);
+            const scale = interpolate(t, [0, 0.5], [0.8, 1], Easing.expoOut);
+
+            return (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 40,
+                    opacity,
+                    transform: `scale(${scale})`,
+                }}>
+                    <h1 style={{
+                        fontSize: 64,
+                        fontWeight: 'bold',
+                        color: color,
+                        textAlign: 'center',
+                        marginBottom: 20,
+                        textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    }}>
+                        {title}
+                    </h1>
+                    {subtitle && (
+                        <p style={{
+                            fontSize: 28,
+                            color: '#FFF',
+                            textAlign: 'center',
+                            maxWidth: '80%',
+                            lineHeight: 1.4,
+                        }}>
+                            {subtitle}
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        function BulletPointPage({ title, points, color = '#DC143C' }) {
+            const { t } = useSprite();
+            const opacity = interpolate(t, [0, 0.3], [0, 1], Easing.expoOut);
+
+            return (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 40,
+                    opacity,
+                }}>
+                    <h2 style={{
+                        fontSize: 48,
+                        fontWeight: 'bold',
+                        color: color,
+                        textAlign: 'center',
+                        marginBottom: 40,
+                    }}>
+                        {title}
+                    </h2>
+
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 20,
+                        maxWidth: '90%',
+                    }}>
+                        {points.map((point, index) => {
+                            const pointOpacity = interpolate(t, [0.1 + index * 0.15, 0.3 + index * 0.15], [0, 1], Easing.expoOut);
+                            return (
+                                <div key={index} style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    opacity: pointOpacity,
+                                    transform: `translateY(${interpolate(pointOpacity, [0, 1], [10, 0])}px)`,
+                                }}>
+                                    <div style={{
+                                        width: 12,
+                                        height: 12,
+                                        backgroundColor: color,
+                                        borderRadius: '50%',
+                                        marginRight: 16,
+                                        marginTop: 10,
+                                        flexShrink: 0,
+                                    }} />
+                                    <p style={{
+                                        fontSize: 28,
+                                        color: '#FFF',
+                                        lineHeight: 1.4,
+                                    }}>
+                                        {point}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function SimpleTextPage({ text, color = '#FFD700', fontSize = 48 }) {
+            const { t } = useSprite();
+            const opacity = interpolate(t, [0, 0.3], [0, 1], Easing.expoOut);
+            const scale = interpolate(t, [0, 0.4], [0.9, 1], Easing.expoOut);
+
+            return (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: 40,
+                    opacity,
+                    transform: `scale(${scale})`,
+                }}>
+                    <p style={{
+                        fontSize,
+                        fontWeight: 'bold',
+                        color: color,
+                        textAlign: 'center',
+                        lineHeight: 1.3,
+                        maxWidth: '90%',
+                    }}>
+                        {text}
+                    </p>
+                </div>
+            );
+        }
+
+        // 主动画组件
+        function ChenzeSkillAnimation() {
+            return (
+                <Stage duration={15} width={800} height={450} bgColor="#000">
+                    {/* 开场 */}
+                    <Sprite start={0} end={2}>
+                        <TitlePage
+                            title="陈泽.skill"
+                            subtitle="主播陈泽的思维操作系统"
+                            color="#FFD700"
+                        />
+                    </Sprite>
+
+                    {/* 思维框架 */}
+                    <Sprite start={1.8} end={3.5}>
+                        <SimpleTextPage
+                            text="从「素质吊差」到人生哲学的演进之路"
+                            color="#DC143C"
+                            fontSize={36}
+                        />
+                    </Sprite>
+
+                    {/* 3个核心心智模型 */}
+                    <Sprite start={3.3} end={6}>
+                        <BulletPointPage
+                            title="3个核心心智模型"
+                            points={[
+                                '"真实"直播哲学 · 真实比完美更重要',
+                                '商业-平台权力不对等认知 · 平台让你死分分钟的事',
+                                '内容演进的实验主义 · 不断实验和转型'
+                            ]}
+                            color="#FFD700"
+                        />
+                    </Sprite>
+
+                    {/* 5条决策启发式 */}
+                    <Sprite start={5.8} end={9}>
+                        <BulletPointPage
+                            title="5条决策启发式"
+                            points={[
+                                '"开直播就是为了赚钱"规则',
+                                '"平台让你死分分钟的事"规则',
+                                '"内容需要不断实验"规则',
+                                '"真实比完美更重要"规则',
+                                '"风险可控就值得尝试"规则'
+                            ]}
+                            color="#DC143C"
+                        />
+                    </Sprite>
+
+                    {/* 表达DNA */}
+                    <Sprite start={8.8} end={12}>
+                        <BulletPointPage
+                            title="表达DNA"
+                            points={[
+                                '短句为主 · 节奏明快',
+                                '高频词: 老铁们、OK了、兄弟们',
+                                '毒舌回怼与神逻辑思维',
+                                '情商高表现 · 确定性表达'
+                            ]}
+                            color="#FFD700"
+                        />
+                    </Sprite>
+
+                    {/* 结尾 */}
+                    <Sprite start={11.8} end={15}>
+                        <TitlePage
+                            title="陈泽.skill"
+                            subtitle="可运行的思维框架 · 不是语录合集"
+                            color="#DC143C"
+                        />
+                    </Sprite>
+                </Stage>
+            );
+        }
+
+        // 渲染
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ChenzeSkillAnimation />);
+    </script>
+</body>
+</html>

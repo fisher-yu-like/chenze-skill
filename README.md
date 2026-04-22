@@ -5,6 +5,12 @@
 # 陈泽.skill
 
 <p align="center">
+  <img src="chenze-skill-animation.gif" alt="Chenze-skill Animation" />
+  <br/>
+  <sub>OK了老铁们</sub>
+</p>
+
+<p align="center">
   <img src="chenze.png" alt="陈泽" width="200" style="border-radius: 10px;"/>
   <br/>
   <sub>主播陈泽的思维操作系统 · 从"素质吊差"到人生哲学的演进之路</sub>

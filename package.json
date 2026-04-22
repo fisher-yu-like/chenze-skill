@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "gif-encoder-2": "^1.0.5",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^24.42.0"
+  }
+}
