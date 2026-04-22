@@ -1,18 +1,11 @@
 <div align="center">
 
-<p align="center">
-  <a href="chenze-intro.html" target="_blank">
-    <img src="chenze-animation.gif" alt="陈泽.skill 介绍动画" width="600" style="max-width: 100%; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
-  </a>
-  <br>
-  <sub>👆 点击查看交互式 HTML 版本 · <a href="chenze-intro.html">打开动画</a></sub>
-</p>
-
 <br>
 
 # 陈泽.skill
 
 <p align="center">
+  <img src="chenze.png" alt="陈泽" width="200" style="border-radius: 10px;"/>
   <br/>
   <sub>主播陈泽的思维操作系统 · 从"素质吊差"到人生哲学的演进之路</sub>
 </p>
