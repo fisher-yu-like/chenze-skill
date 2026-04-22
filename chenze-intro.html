@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陈泽.skill · 介绍动画</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* Scanline overlay */
+.scanlines {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Stage */
+.stage {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  background: #0d0d0d;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(255, 45, 45, 0.08), 0 0 120px rgba(0, 200, 255, 0.04);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Ambient glow corners */
+.stage::before {
+  content: '';
+  position: absolute;
+  top: -40%; left: -20%;
+  width: 60%; height: 80%;
+  background: radial-gradient(ellipse, rgba(255,45,45,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.stage::after {
+  content: '';
+  position: absolute;
+  bottom: -30%; right: -20%;
+  width: 60%; height: 80%;
+  background: radial-gradient(ellipse, rgba(0,200,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== ANIMATION LAYERS ===== */
+
+.layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+/* Layer 0: Background particles */
+.bg-particles {
+  z-index: 0;
+}
+.bg-particles .dot {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+}
+
+/* Layer 1: Intro scene — "老铁们" */
+.scene-intro { z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scene-intro .greeting {
+  font-size: 72px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff2d2d 0%, #ff6b35 50%, #ffd700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0;
+  transform: scale(0.6) rotate(-3deg);
+  animation: introGreeting 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  text-shadow: none;
+  filter: drop-shadow(0 0 30px rgba(255,45,45,0.3));
+}
+.scene-intro .sub-greeting {
+  font-size: 18px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 16px;
+  letter-spacing: 0.2em;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.5s forwards;
+}
+
+@keyframes introGreeting {
+  0% { opacity: 0; transform: scale(0.6) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Layer 2: Title reveal */
+.scene-title { z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scene-title .chenze-logo {
+  font-size: 64px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: none;
+}
+.scene-title .chenze-logo .dot-skill {
+  font-size: 24px;
+  color: rgba(255,255,255,0.3);
+  font-weight: 300;
+}
+.scene-title .tagline {
+  font-size: 14px;
+  color: rgba(255,255,255,0.25);
+  margin-top: 12px;
+  letter-spacing: 0.15em;
+  opacity: 0;
+}
+.scene-title .tagline .highlight {
+  color: rgba(255,107,53,0.6);
+}
+
+/* Layer 3: Mental models */
+.scene-models { z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+.scene-models .model-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 14px 20px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+.scene-models .model-card:nth-child(1) { border-color: #ff2d2d; }
+.scene-models .model-card:nth-child(2) { border-color: #00c8ff; }
+.scene-models .model-card:nth-child(3) { border-color: #ffd700; }
+
+.scene-models .model-card .model-icon { font-size: 16px; margin-bottom: 4px; }
+.scene-models .model-card .model-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 3px;
+}
+.scene-models .model-card .model-desc {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  line-height: 1.4;
+}
+
+/* Layer 4: Quote */
+.scene-quote { z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+.scene-quote .quote-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  line-height: 1.4;
+  opacity: 0;
+}
+.scene-quote .quote-text .red { color: #ff2d2d; }
+.scene-quote .quote-text .cyan { color: #00c8ff; }
+.scene-quote .quote-text .gold { color: #ffd700; }
+.scene-quote .quote-author {
+  font-size: 13px;
+  color: rgba(255,255,255,0.25);
+  margin-top: 16px;
+  letter-spacing: 0.1em;
+  opacity: 0;
+}
+
+/* Layer 5: Final card */
+.scene-final { z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scene-final .final-title {
+  font-size: 48px;
+  font-weight: 900;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.8);
+}
+.scene-final .final-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 8px;
+  letter-spacing: 0.2em;
+  opacity: 0;
+}
+.scene-final .final-badge {
+  margin-top: 20px;
+  padding: 6px 16px;
+  border: 1px solid rgba(255,45,45,0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: rgba(255,45,45,0.5);
+  letter-spacing: 0.1em;
+  opacity: 0;
+}
+
+/* Watermark */
+.watermark {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.12);
+  letter-spacing: 0.15em;
+  font-family: monospace;
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Glitch effect */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+  100% { transform: translate(0); }
+}
+
+/* Shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* CRT flicker */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.997; }
+}
+.stage {
+  animation: flicker 0.15s infinite;
+}
+
+/* ===== TIMELINE (CSS-only animation) ===== */
+
+/* Phase 1: Intro greeting (0s - 2.5s) */
+.scene-intro { opacity: 1; }
+.scene-title, .scene-models, .scene-quote, .scene-final { opacity: 0; }
+
+/* Phase 2: Title reveal (2.5s - 5s) */
+.scene-intro { animation: phaseOut 0.4s 2.1s forwards; }
+.scene-title { animation: phaseIn 0.5s 2.5s forwards; }
+.scene-title .chenze-logo { animation: titleSlideUp 0.7s 2.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.scene-title .tagline { animation: fadeUp 0.5s 3.4s forwards; }
+
+/* Phase 3: Mental models (5s - 8.5s) */
+.scene-title { animation: phaseOut 0.4s 4.6s forwards; }
+.scene-models { animation: phaseIn 0.5s 5s forwards; }
+.scene-models .model-card:nth-child(1) { animation: cardSlideIn 0.5s 5.2s forwards; }
+.scene-models .model-card:nth-child(2) { animation: cardSlideIn 0.5s 5.7s forwards; }
+.scene-models .model-card:nth-child(3) { animation: cardSlideIn 0.5s 6.2s forwards; }
+
+/* Phase 4: Quote (8.5s - 11.5s) */
+.scene-models { animation: phaseOut 0.4s 8.1s forwards; }
+.scene-quote { animation: phaseIn 0.5s 8.5s forwards; }
+.scene-quote .quote-text { animation: quoteReveal 0.8s 8.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.scene-quote .quote-author { animation: fadeUp 0.5s 9.7s forwards; }
+
+/* Phase 5: Final card (11.5s - 14s) */
+.scene-quote { animation: phaseOut 0.4s 11.1s forwards; }
+.scene-final { animation: phaseIn 0.5s 11.5s forwards; }
+.scene-final .final-title { animation: finalReveal 0.7s 11.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.scene-final .final-sub { animation: fadeUp 0.5s 12.5s forwards; }
+.scene-final .final-badge { animation: fadeUp 0.5s 13s forwards; }
+
+@keyframes phaseIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes phaseOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes titleSlideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes cardSlideIn {
+  0% { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes quoteReveal {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes finalReveal {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Loop: after 14s, restart from final card hold */
+.scene-final { animation: phaseIn 0.5s 11.5s forwards, holdThenFade 1s 15s forwards; }
+
+@keyframes holdThenFade {
+  0% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* Responsive iframe-friendly */
+@media (max-width: 640px) {
+  .stage { width: 100vw; height: 66.67vw; border-radius: 0; }
+  .scene-intro .greeting { font-size: 48px; }
+  .scene-title .chenze-logo { font-size: 42px; }
+  .scene-quote .quote-text { font-size: 22px; }
+  .scene-final .final-title { font-size: 36px; }
+}
+
+/* Ready signal for video recording */
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div class="stage" id="stage">
+
+  <!-- Background particles -->
+  <div class="layer bg-particles" id="particles"></div>
+
+  <!-- Scene 1: Intro — "老铁们" -->
+  <div class="layer scene-intro">
+    <div class="greeting">老铁们</div>
+    <div class="sub-greeting">✦ 陈泽的思维操作系统 ✦</div>
+  </div>
+
+  <!-- Scene 2: Title -->
+  <div class="layer scene-title">
+    <div class="chenze-logo">陈泽<span class="dot-skill">.skill</span></div>
+    <div class="tagline">主播陈泽的 <span class="highlight">思维操作系统</span></div>
+  </div>
+
+  <!-- Scene 3: Mental Models -->
+  <div class="layer scene-models">
+    <div class="model-card" style="animation-delay: 5.2s">
+      <div class="model-icon">🎙️</div>
+      <div class="model-title">「真实」直播哲学</div>
+      <div class="model-desc">在直播和人生中，真实比完美更重要，坦诚比包装更有力量</div>
+    </div>
+    <div class="model-card" style="animation-delay: 5.7s">
+      <div class="model-icon">⚡</div>
+      <div class="model-title">商业-平台权力不对等认知</div>
+      <div class="model-desc">平台是爸爸，主播再咋你是个鸡巴。清醒认知商业规则</div>
+    </div>
+    <div class="model-card" style="animation-delay: 6.2s">
+      <div class="model-icon">🔥</div>
+      <div class="model-title">内容演进的实验主义</div>
+      <div class="model-desc">固守成功模式等于慢性死亡。不断实验，不断转型</div>
+    </div>
+  </div>
+
+  <!-- Scene 4: Quote -->
+  <div class="layer scene-quote">
+    <div class="quote-text">
+      <span class="red">开直播</span>就是为了<br>
+      <span class="gold">赚钱</span>
+      <span style="color: rgba(255,255,255,0.15); font-weight: 300;">，</span><br>
+      <span style="font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.3);">但人生的意义在于</span>
+      <span class="cyan">体验</span>
+    </div>
+    <div class="quote-author">—— 陈泽 · 2025</div>
+  </div>
+
+  <!-- Scene 5: Final -->
+  <div class="layer scene-final">
+    <div class="final-title">陈泽.skill</div>
+    <div class="final-sub">不是语录合集，是可运行的思维框架</div>
+    <div class="final-badge">✦ npx skills add alchaincyf/chenze-perspective ✦</div>
+  </div>
+
+  <div class="watermark">Created by Huashu-Design</div>
+</div>
+
+<script>
+// Background particles
+(function() {
+  const container = document.getElementById('particles');
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.style.left = Math.random() * 100 + '%';
+    dot.style.top = Math.random() * 100 + '%';
+    dot.style.animationDelay = (Math.random() * 5) + 's';
+    dot.style.opacity = 0.05 + Math.random() * 0.15;
+    const size = 1 + Math.random() * 2;
+    dot.style.width = size + 'px';
+    dot.style.height = size + 'px';
+    container.appendChild(dot);
+  }
+})();
+
+// Ready signal for video recording
+window.__ready = true;
+</script>
+
+</body>
+</html>
