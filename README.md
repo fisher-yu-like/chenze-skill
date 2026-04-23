@@ -303,7 +303,7 @@ chenze-perspective/
 ```
 ### 相关作品
 [王二-skill](https://github.com/fisher-yu-like/wang-er-skill)
-[Justin Bieber](https://github.com/fisher-yu-like/justin-bieber-skill)
+[Justin Bieber-skill](https://github.com/fisher-yu-like/justin-bieber-skill)
 ---
 
 
