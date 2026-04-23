@@ -253,8 +253,3 @@ description: |
 > "人生的意义在于体验" —— 2025年5月抖音视频
 > "我上斗海播我就死了" —— 谈平台权力不对等
 > "人家是平台，你一个主播你再咋的你是个鸡巴。一个臭主播" —— 对平台关系的清醒认知
-
----
-
-> 本Skill由 [女娲 · Skill造人术](https://github.com/alchaincyf/nuwa-skill) 生成  
-> 创建者：[花叔](https://x.com/AlchainHust)
