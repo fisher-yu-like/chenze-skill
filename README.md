@@ -178,7 +178,7 @@
 ## 安装
 
 ```bash
-npx skills add alchaincyf/chenze-perspective
+npx skills add alchaincyf/chenze-skill
 ```
 
 然后在 Claude Code 里：
@@ -274,7 +274,7 @@ npx skills add alchaincyf/chenze-perspective
 想蒸馏其他人？安装女娲：
 
 ```bash
-npx skills add alchaincyf/nuwa-skill
+npx skills add fisher-yu-like/nuwa-skill
 ```
 
 然后说「蒸馏一个XXX」就行了。
