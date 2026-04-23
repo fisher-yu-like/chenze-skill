@@ -301,7 +301,9 @@ chenze-perspective/
 ├── scripts/                              # 辅助脚本
 └── zhangxuefeng-skill-README.md         # 参考的README示例
 ```
-
+### 相关作品
+[王二-skill](https://github.com/fisher-yu-like/wang-er-skill)
+[Justin Bieber](https://github.com/fisher-yu-like/justin-bieber-skill)
 ---
 
 
