@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="chenze.png" alt="陈泽" width="200" style="border-radius: 10px;"/>
+  <img src="chenze2.png" alt="陈泽" width="200" style="border-radius: 10px;"/>
   <br/>
   <sub>主播陈泽的思维操作系统 · 从"素质吊差"到人生哲学的演进之路</sub>
 </p>
@@ -178,7 +178,7 @@
 ## 安装
 
 ```bash
-npx skills add alchaincyf/chenze-skill
+npx skills add fisher-yu-like/chenze-skill
 ```
 
 然后在 Claude Code 里：
